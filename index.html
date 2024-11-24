@@ -1,0 +1,585 @@
+<html><head><base href="not found" charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body><!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <title>ניהול פרויקט</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .tab-content {
+            padding: 20px;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .nav-tabs {
+            margin-bottom: 0;
+        }
+        .progress {
+            height: 25px;
+        }
+        .priority-high {
+            background-color: #ffebee;
+        }
+        .priority-medium {
+            background-color: #fff3e0;
+        }
+        .priority-low {
+            background-color: #e8f5e9;
+        }
+        .filter-section {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">ZOOM 2025</h1>
+
+        <!-- CSV Integration Buttons -->
+        <div id="csvButtons" class="text-center mb-3">
+            <button class="btn btn-primary me-2" onclick="exportToCSV()">ייצא ל-CSV</button>
+            <button class="btn btn-primary me-2" onclick="importFromCSV()">ייבא מ-CSV</button>
+            <button class="btn btn-danger" onclick="resetAll()">אפס הכל</button>
+            <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="handleFileSelect(event)">
+        </div>
+
+        <div class="progress mb-4">
+            <div class="progress-bar" role="progressbar" id="projectProgress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button">פרטי פרויקט</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="team-tab" data-bs-toggle="tab" data-bs-target="#team" type="button">חברי צוות</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button">משימות</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+            <!-- Project Details Tab -->
+            <div class="tab-pane fade show active" id="home">
+                <button class="btn btn-success mb-3" onclick="addProjectDetails()">הוסף פרטי פרויקט</button>
+                <form id="projectForm">
+                    <div class="mb-3">
+                        <label for="projectName" class="form-label">שם הפרויקט</label>
+                        <input type="text" class="form-control" id="projectName">
+                    </div>
+                    <div class="mb-3">
+                        <label for="projectDesc" class="form-label">תיאור הפרויקט</label>
+                        <textarea class="form-control" id="projectDesc" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Team Tab -->
+            <div class="tab-pane fade" id="team">
+                <button class="btn btn-success mb-3" onclick="addTeamMember()">הוסף חבר צוות</button>
+                <table class="table" id="teamTable">
+                    <thead>
+                        <tr>
+                            <th>שם חבר צוות</th>
+                            <th>פעולה</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamic team member rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Tasks Tab -->
+            <div class="tab-pane fade" id="tasks">
+                <button class="btn btn-success mb-3" onclick="addTask()">הוסף משימה</button>
+                <div class="filter-section">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <select class="form-select" id="priorityFilter">
+                                <option value="">סנן לפי עדיפות</option>
+                                <option value="high">גבוהה</option>
+                                <option value="medium">בינונית</option>
+                                <option value="low">נמוכה</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="statusFilter">
+                                <option value="">סנן לפי סטטוס</option>
+                                <option value="0">לא בוצע</option>
+                                <option value="1">בוצע</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="memberFilter">
+                                <option value="">סנן לפי חבר צוות</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <table class="table" id="tasksTable">
+                    <thead>
+                        <tr>
+                            <th>שם משימה</th>
+                            <th>אחראי</th>
+                            <th>תאריך יעד</th>
+                            <th>תיאור</th>
+                            <th>עדיפות</th>
+                            <th>סטטוס</th>
+                            <th>פעולה</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamic task rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let teamMembers = [];
+        let tasks = [];
+
+        function resetAll() {
+            if (confirm('האם אתה בטוח שברצונך לאפס את כל הנתונים?')) {
+                // Clear all data
+                teamMembers = [];
+                tasks = [];
+                
+                // Clear project details
+                if (document.getElementById('projectName')) {
+                    document.getElementById('projectName').value = '';
+                }
+                if (document.getElementById('projectDesc')) {
+                    document.getElementById('projectDesc').value = '';
+                }
+                
+                // Clear localStorage
+                localStorage.clear();
+                
+                // Update UI
+                updateTeamTable();
+                renderTasks();
+                updateProgress();
+                
+                alert('כל הנתונים אופסו בהצלחה!');
+            }
+        }
+
+        function loadFromStorage() {
+            const savedTeamMembers = localStorage.getItem('teamMembers');
+            if (savedTeamMembers) {
+                teamMembers = JSON.parse(savedTeamMembers);
+                updateTeamTable();
+            }
+            
+            const savedTasks = localStorage.getItem('tasks');
+            if (savedTasks) {
+                tasks = JSON.parse(savedTasks);
+            }
+            
+            // Initialize tasks array if empty
+            if (!tasks || !Array.isArray(tasks)) {
+                tasks = [];
+            }
+            
+            renderTasks();
+
+            // Load project details
+            const projectName = document.getElementById('projectName');
+            const projectDesc = document.getElementById('projectDesc');
+            
+            if (projectName) {
+                projectName.value = localStorage.getItem('projectName') || '';
+            }
+            if (projectDesc) {
+                projectDesc.value = localStorage.getItem('projectDesc') || '';
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            
+            // Save project details
+            const projectName = document.getElementById('projectName');
+            const projectDesc = document.getElementById('projectDesc');
+            
+            if (projectName) {
+                localStorage.setItem('projectName', projectName.value);
+            }
+            if (projectDesc) {
+                localStorage.setItem('projectDesc', projectDesc.value);
+            }
+        }
+
+        function addTask() {
+            const task = {
+                name: '',
+                assignee: '',
+                dueDate: '',
+                description: '',
+                status: '0',
+                priority: 'medium'
+            };
+            tasks.push(task);
+            renderTasks();
+            saveToStorage();
+        }
+
+        function exportToCSV() {
+            // Prepare the CSV data with UTF-8 BOM
+            let csv = '\ufeff'; // Add BOM for UTF-8
+            
+            // Project Details Tab
+            csv += 'Project Details\n';
+            csv += `Name,${(document.getElementById('projectName')?.value || '').replace(/,/g, ';')}\n`;
+            csv += `Description,${(document.getElementById('projectDesc')?.value || '').replace(/,/g, ';')}\n\n`;
+            
+            // Team Members Tab
+            csv += 'Team Members\n';
+            teamMembers.forEach(member => {
+                csv += `${member.replace(/,/g, ';')}\n`;
+            });
+            csv += '\n';
+            
+            // Tasks Tab
+            csv += 'Tasks\n';
+            csv += 'Name,Assignee,Due Date,Description,Status,Priority\n';
+            tasks.forEach(task => {
+                csv += `${task.name.replace(/,/g, ';')},${task.assignee.replace(/,/g, ';')},${task.dueDate},${task.description.replace(/,/g, ';')},${task.status},${task.priority}\n`;
+            });
+            
+            // Create and trigger download
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'project_data.csv';
+            link.click();
+        }
+
+        function importFromCSV() {
+            document.getElementById('csvFileInput').click();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    const lines = text.split('\n');
+                    
+                    let section = '';
+                    teamMembers = [];
+                    tasks = [];
+                    
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        if (line === 'Project Details') {
+                            section = 'project';
+                            continue;
+                        } else if (line === 'Team Members') {
+                            section = 'team';
+                            continue;
+                        } else if (line === 'Tasks') {
+                            section = 'tasks';
+                            continue;
+                        }
+                        
+                        if (section === 'project') {
+                            const [key, value] = line.split(',');
+                            if (key === 'Name' && document.getElementById('projectName')) {
+                                document.getElementById('projectName').value = value;
+                            } else if (key === 'Description' && document.getElementById('projectDesc')) {
+                                document.getElementById('projectDesc').value = value;
+                            }
+                        } else if (section === 'team' && !line.includes(',')) {
+                            teamMembers.push(line);
+                        } else if (section === 'tasks' && !line.startsWith('Name,')) {
+                            const [name, assignee, dueDate, description, status, priority] = line.split(',');
+                            tasks.push({name, assignee, dueDate, description, status, priority});
+                        }
+                    }
+                    
+                    updateTeamTable();
+                    renderTasks();
+                    saveToStorage();
+                    alert('קובץ CSV נטען בהצלחה!');
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function addProjectDetails() {
+            const projectNameInput = document.getElementById('projectName');
+            const projectDescInput = document.getElementById('projectDesc');
+            
+            if (!projectNameInput || !projectDescInput) {
+                console.error('Project form elements not found');
+                return;
+            }
+
+            const projectName = prompt('שם הפרויקט:');
+            const projectDesc = prompt('תיאור הפרויקט:');
+            
+            if (projectName) {
+                projectNameInput.value = projectName;
+            }
+            if (projectDesc) {
+                projectDescInput.value = projectDesc;
+            }
+            saveToStorage();
+        }
+
+        function addTeamMember() {
+            const memberName = prompt('שם חבר הצוות:');
+            if (memberName) {
+                teamMembers.push(memberName);
+                updateTeamTable();
+                saveToStorage();
+            }
+        }
+
+        function generateICSContent(tasks, memberName) {
+            let icsContent = 
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ZOOM2025//Project Tasks//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+`;
+            
+            tasks.forEach(task => {
+                if (task.assignee === memberName) {
+                    // Convert date to proper format YYYYMMDD
+                    const dueDate = task.dueDate.replace(/-/g, '');
+                    
+                    icsContent += 
+`BEGIN:VEVENT
+DTSTAMP:${new Date().toISOString().replace(/[-:.]/g, '').split('T')[0]}T160000
+DTSTART:${dueDate}T160000
+DTEND:${dueDate}T170000
+SUMMARY:${task.name}
+DESCRIPTION:${task.description} - Priority: ${task.priority}
+STATUS:${task.status === '1' ? 'COMPLETED' : 'NEEDS-ACTION'}
+BEGIN:VALARM
+TRIGGER:-PT10M
+ACTION:DISPLAY
+DESCRIPTION:תזכורת: ${task.name}
+END:VALARM
+END:VEVENT
+`;
+                }
+            });
+            
+            icsContent += 'END:VCALENDAR';
+            return icsContent;
+        }
+
+        function exportToCalendar(memberName) {
+            const filteredTasks = tasks.filter(task => task.assignee === memberName);
+            if (filteredTasks.length === 0) {
+                alert('אין משימות למשתמש זה');
+                return;
+            }
+            
+            const icsContent = generateICSContent(filteredTasks, memberName);
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `tasks_${memberName}.ics`;
+            link.click();
+        }
+
+        function renderTasks() {
+            const table = document.getElementById('tasksTable').getElementsByTagName('tbody')[0];
+            table.innerHTML = '';
+            
+            const priorityFilter = document.getElementById('priorityFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const memberFilter = document.getElementById('memberFilter').value;
+
+            let filteredTasks = [...tasks]; // Create a copy for sorting
+            
+            // Sort by member if memberFilter is set
+            if (memberFilter) {
+                filteredTasks = filteredTasks.filter(task => task.assignee === memberFilter);
+                
+                // Add export calendar button if filtering by member
+                const exportDiv = document.createElement('div');
+                exportDiv.className = 'text-end mb-2';
+                exportDiv.innerHTML = `
+                    <button class="btn btn-info" onclick="exportToCalendar('${memberFilter}')">
+                        ייצא משימות ליומן גוגל
+                    </button>
+                `;
+                table.parentElement.insertBefore(exportDiv, table);
+            }
+
+            // Apply other filters
+            if (priorityFilter) {
+                filteredTasks = filteredTasks.filter(task => task.priority === priorityFilter);
+            }
+            if (statusFilter) {
+                filteredTasks = filteredTasks.filter(task => task.status === statusFilter);
+            }
+
+            filteredTasks.forEach((task, index) => {
+                const row = table.insertRow();
+                row.classList.add(`priority-${task.priority}`);
+                row.innerHTML = `
+                    <td><input type="text" class="form-control" value="${task.name}"></td>
+                    <td>
+                        <select class="form-control assignee-select">
+                            <option value="">בחר אחראי</option>
+                            ${teamMembers.map(member => 
+                                `<option value="${member}" ${member === task.assignee ? 'selected' : ''}>${member}</option>`
+                            ).join('')}
+                        </select>
+                    </td>
+                    <td><input type="date" class="form-control" value="${task.dueDate}"></td>
+                    <td><input type="text" class="form-control" value="${task.description}"></td>
+                    <td>
+                        <select class="form-control">
+                            <option value="high" ${task.priority === 'high' ? 'selected' : ''}>גבוהה</option>
+                            <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>בינונית</option>
+                            <option value="low" ${task.priority === 'low' ? 'selected' : ''}>נמוכה</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="form-control">
+                            <option value="0" ${task.status === '0' ? 'selected' : ''}>לא בוצע</option>
+                            <option value="1" ${task.status === '1' ? 'selected' : ''}>בוצע</option>
+                        </select>
+                    </td>
+                    <td><button class="btn btn-danger btn-sm" onclick="deleteTask(${index})">מחק</button></td>
+                `;
+            });
+
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const completedTasks = tasks.filter(task => task.status === '1').length;
+            const totalTasks = tasks.length;
+            const progress = totalTasks === 0 ? 0 : (completedTasks / totalTasks) * 100;
+            
+            const progressBar = document.getElementById('projectProgress');
+            progressBar.style.width = `${progress}%`;
+            progressBar.textContent = `${Math.round(progress)}% הושלם`;
+        }
+
+        function updateTeamTable() {
+            const table = document.getElementById('teamTable');
+            if (!table) return;
+            
+            table.innerHTML = '';
+            teamMembers.forEach((member, index) => {
+                const row = table.insertRow();
+                row.insertCell(0).textContent = member;
+                const actionsCell = row.insertCell(1);
+                actionsCell.innerHTML = `<button class="btn btn-danger btn-sm" onclick="removeTeamMember(${index})">מחק</button>`;
+            });
+            
+            // Update member filter dropdown
+            const memberFilter = document.getElementById('memberFilter');
+            if (memberFilter) {
+                memberFilter.innerHTML = `
+                    <option value="">סנן לפי חבר צוות</option>
+                    ${teamMembers.map(member => `<option value="${member}">${member}</option>`).join('')}
+                `;
+            }
+
+            // Update all assignee dropdowns in task rows
+            const assigneeSelects = document.querySelectorAll('.assignee-select');
+            assigneeSelects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = `
+                    <option value="">בחר אחראי</option>
+                    ${teamMembers.map(member => 
+                        `<option value="${member}" ${member === currentValue ? 'selected' : ''}>${member}</option>`
+                    ).join('')}
+                `;
+            });
+        }
+
+        function removeTeamMember(index) {
+            teamMembers.splice(index, 1);
+            updateTeamTable();
+            saveToStorage();
+            renderTasks();
+        }
+
+        function sortTasksByMember(memberName) {
+            if (memberName) {
+                tasks.sort((a, b) => {
+                    if (a.assignee === memberName && b.assignee !== memberName) return -1;
+                    if (a.assignee !== memberName && b.assignee === memberName) return 1;
+                    return 0;
+                });
+                renderTasks();
+                saveToStorage();
+            }
+        }
+
+        function initializeTasksTable() {
+            // Add event listeners for input changes
+            const tasksTable = document.getElementById('tasksTable');
+            if (tasksTable) {
+                tasksTable.addEventListener('change', (e) => {
+                    const row = e.target.closest('tr');
+                    const index = row?.rowIndex - 1; // -1 for header row
+                    
+                    if (index >= 0 && index < tasks.length) {
+                        // Update task data when inputs change
+                        const inputs = row.querySelectorAll('input, select');
+                        tasks[index].name = inputs[0].value;
+                        tasks[index].assignee = inputs[1].value;
+                        tasks[index].dueDate = inputs[2].value;
+                        tasks[index].description = inputs[3].value;
+                        tasks[index].priority = inputs[4].value;
+                        tasks[index].status = inputs[5].value;
+                        
+                        saveToStorage();
+                        updateProgress();
+                    }
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            
+            // Initialize the tasks table
+            initializeTasksTable();
+            
+            // Add filter event listeners
+            const filters = ['priorityFilter', 'statusFilter', 'memberFilter'];
+            filters.forEach(filterId => {
+                const filter = document.getElementById(filterId);
+                if (filter) {
+                    filter.addEventListener('change', renderTasks);
+                }
+            });
+            
+            // Initialize progress bar
+            updateProgress();
+        });
+    </script>
+</body>
+</html></body></html>
