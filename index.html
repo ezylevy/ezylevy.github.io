@@ -37,11 +37,31 @@
             background-color: #f8f9fa;
             border-radius: 5px;
         }
+        .container img {
+            max-width: 100px;
+            margin: 0 auto;
+            display: block;
+        }
+        .text-muted {
+            color: #6c757d;
+            font-size: 1.1rem;
+            margin-top: -5px;
+        }
+        .status-incomplete {
+            background-color: #fff3e0; /* Light orange background for incomplete tasks */
+        }
+        .status-complete {
+            background-color: #e8f5e9; /* Light green background for completed tasks */
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center mb-4">ZOOM 2025</h1>
+        <div class="text-center mb-4">
+            <img src="לוגו בלי כיתוב.png" alt="colorful elephant logo" class="mb-3" style="width: 100px; height: auto;">
+            <h1>דשבורד לניהול פרויקט</h1>
+            <p class="text-muted">מאת עזי לוי</p>
+        </div>
 
         <!-- CSV Integration Buttons -->
         <div id="csvButtons" class="text-center mb-3">
@@ -442,6 +462,7 @@ END:VEVENT
             filteredTasks.forEach((task, index) => {
                 const row = table.insertRow();
                 row.classList.add(`priority-${task.priority}`);
+                row.classList.add(task.status === '1' ? 'status-complete' : 'status-incomplete');
                 row.innerHTML = `
                     <td><input type="text" class="form-control" value="${task.name}"></td>
                     <td>
