@@ -434,7 +434,13 @@ END:VEVENT
             const statusFilter = document.getElementById('statusFilter').value;
             const memberFilter = document.getElementById('memberFilter').value;
 
-            let filteredTasks = [...tasks]; // Create a copy for sorting
+            let filteredTasks = [...tasks];
+            
+            // Remove any existing export calendar button
+            const existingExportDiv = document.querySelector('.export-calendar-div');
+            if (existingExportDiv) {
+                existingExportDiv.remove();
+            }
             
             // Sort by member if memberFilter is set
             if (memberFilter) {
@@ -442,7 +448,7 @@ END:VEVENT
                 
                 // Add export calendar button if filtering by member
                 const exportDiv = document.createElement('div');
-                exportDiv.className = 'text-end mb-2';
+                exportDiv.className = 'text-end mb-2 export-calendar-div'; // Added export-calendar-div class
                 exportDiv.innerHTML = `
                     <button class="btn btn-info" onclick="exportToCalendar('${memberFilter}')">
                         ייצא משימות ליומן גוגל
